@@ -1,19 +1,19 @@
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY
-var Airtable = require('airtable');
-var customerPipelineBase = new Airtable({apiKey: AIRTABLE_API_KEY}).base('appLhC9McNSEeDMmE');
+let Airtable = require('airtable');
+let corDistributionBase = new Airtable({apiKey: AIRTABLE_API_KEY}).base('appLhC9McNSEeDMmE');
 
-let repsCustomers = []
-let totalAnnualRevenue = 0
-let searchSalesID = -1
+let repsCustomers = []  // list of a given sales reps customers
+let totalAnnualRevenue = 0  // total revenue for a particular sales reps account base
+let searchSalesID = -1  // reps SalesID, received from stdin
 
-function queryCustomerPipeline() {
-    customerPipelineBase('Customer Pipeline').select({
-        // Selecting the first 3 records in Grid-View-Pipeline:
-        maxRecords: 50,
+// queryCustomerPipeline() connects to a Airtable base, and performs a table level select opera
+async function queryCustomerPipeline() {
+    corDistributionBase('Customer Pipeline').select({
+        fields: ["CustomerID", "SalesID (from Territory Manager)",  "Company Name", "Annual Revenue", "Status"],
+        maxRecords: 100,
         view: "Grid-View-Pipeline"
     }).eachPage(function page(records, fetchNextPage) {
         // This function (`page`) will get called for each page of records.
-        // For each record, if record has matching TM id, add that records annual revenue to running total
         records.forEach(record => {
             let sid = record.get('SalesID (from Territory Manager)')
             if (sid == searchSalesID) { repsCustomers.push(record) }
@@ -27,30 +27,38 @@ function queryCustomerPipeline() {
             console.error(err);
             return; 
         }
-    });
+    })
 }
 
 function printCustomers() {
-        console.log(`Showing Customers and Annual Revenue for SalesID ${searchSalesID}\n`)
+    console.log(`\nShowing accounts assigned to SalesID ${searchSalesID}\n`)
+    console.log(`CID:\tCompany Name:\tAnnual Revenue:\tStatus:`)
+
     for (let i in repsCustomers) {
-        console.log(`Company Name: ${repsCustomers[i].get('Company Name')}\tAnnual Revenue: ${repsCustomers[i].get('Annual Revenue')}`)
+        console.log(`${repsCustomers[i].get('CustomerID')}\t${repsCustomers[i].get('Company Name')}\t$${repsCustomers[i].get('Annual Revenue').toLocaleString('en-US')}\t${repsCustomers[i].get('Status')}`)
+        totalAnnualRevenue += repsCustomers[i].get('Annual Revenue')
     }
+
+    console.log('\t\t\t$' + totalAnnualRevenue.toLocaleString('en-US') +'\n')
 }
 
 // Read from stdin
-const readline = require("readline");
-const readline_interface = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-})
+const readline = require('readline-sync');
 
-// Prompt user to enter SalesID
-// Run query on DB and print results of query
-readline_interface.question("Enter Sales Rep ID:  ", (input) => {
-        searchSalesID = input.toString()
-        if (searchSalesID != -1) {
-            queryCustomerPipeline()
-            setTimeout(() => printCustomers(), 1000)
-        }        
-        readline_interface.close()
-})
+let selection = readline.question(`Customer Pipeline CLI Edition
+Please select from the following options:
+1 - Get customer list by SalesID
+2 - Update customer status
+3 - Exit
+Selection: `);
+
+if (selection == 1) {
+    // Prompt user to enter SalesID
+    // Run query on DB and print results of query
+    searchSalesID = readline.question('Enter SalesID: ')
+
+    if (searchSalesID != -1) {
+        queryCustomerPipeline()
+        setTimeout(() => printCustomers(), 1250)
+    } 
+}
