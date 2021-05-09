@@ -6,9 +6,8 @@ const readline = require('readline-sync');
 
 let repsCustomers = []  // list of a given sales reps customers
 let totalAnnualRevenue = 0  // total revenue for a particular sales reps account base
-let searchSalesID = -1  // reps SalesID, received from stdin
-let searchCustomerID = -1 // CustomerID received from stdin
-let setStatus = ""
+let searchSalesID = -1 // SalesID provided by stdin
+let searchCustomerID = -1
 let recordId = -1
 let records = [] // list of all records returned by query, used to store results prior to filtering
 
@@ -94,7 +93,7 @@ Selection: `);
             printCustomers()
             totalAnnualRevenue = 0
         } else if (selection == 2) {
-            let searchCustomerID = readline.question('Enter CustomerID: ')
+            searchCustomerID = readline.question('Enter CustomerID: ')
             let setStatus = readline.question('Set Status: ')
             await updateCustomerStatus(searchCustomerID, setStatus)
             console.log(`Successfully updated status for CID: ${searchCustomerID} to ${setStatus}\n`)
@@ -104,5 +103,5 @@ Selection: `);
     }
 }
 
-// Execute the main loop
+// Execute main loop
 main()
